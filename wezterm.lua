@@ -40,11 +40,6 @@ config.tab_bar_at_bottom = true
 config.use_fancy_tab_bar = false
 config.tab_and_split_indices_are_zero_based = true
 
-local weztmux = wezterm.plugin.require("https://github.com/khsoh/wez-tmux")
--- !!! For debugging changes in local repo
--- local weztmux = wezterm.plugin.require("file://localhost" .. os.getenv("HOME") .. "/github/wez-tmux")
-weztmux.apply_to_config(config, {})
-
 -- tmux status
 wezterm.on("update-right-status", function(window, _)
 	local SOLID_LEFT_ARROW = ""
@@ -67,5 +62,20 @@ wezterm.on("update-right-status", function(window, _)
 		{ Text = SOLID_LEFT_ARROW },
 	}))
 end)
+
+-------- Plugins should normally be applied at the end of the file ----------
+local PLUGINS = {
+	{
+		use = "localhost",
+		localhost = "file://localhost" .. os.getenv("HOME") .. "/github/wez-tmux",
+		remote = "https://github.com/khsoh/wez-tmux",
+		overrides = {},
+	},
+}
+
+for _, plugininfo in pairs(PLUGINS) do
+	local inuse = plugininfo.use and plugininfo.use or "remote"
+	wezterm.plugin.require(plugininfo[inuse]).apply_to_config(config, plugininfo.overrides)
+end
 
 return config
