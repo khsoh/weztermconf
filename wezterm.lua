@@ -11,9 +11,8 @@ config.font_size = 16
 config.window_decorations = "RESIZE"
 
 -- tmux
--- config.leader = { key = "a", mods = "CTRL", timeout_milliseconds = 2000 }
 local act = wezterm.action
-config.leader = { key = "a", mods = "CTRL" }
+config.leader = { key = "a", mods = "CTRL", timeout_milliseconds = 2000 }
 config.keys = {
 	{ key = "h", mods = "CTRL", action = act.ActivatePaneDirection("Left") },
 	{ key = "k", mods = "CTRL", action = act.ActivatePaneDirection("Down") },
@@ -45,9 +44,6 @@ local weztmux = wezterm.plugin.require("https://github.com/khsoh/wez-tmux")
 -- !!! For debugging changes in local repo
 -- local weztmux = wezterm.plugin.require("file://localhost" .. os.getenv("HOME") .. "/github/wez-tmux")
 weztmux.apply_to_config(config, {})
-
--- The following must be applied AFTER weztmux.apply_to_config
-config.leader.timeout_milliseconds = 2000
 
 -- tmux status
 wezterm.on("update-right-status", function(window, _)
