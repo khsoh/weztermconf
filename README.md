@@ -1,0 +1,2 @@
+# weztermconf
+Wezterm configuration
