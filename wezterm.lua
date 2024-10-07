@@ -34,48 +34,112 @@ config.keys = {
 	},
 }
 
+config.window_close_confirmation = "NeverPrompt"
+
 -- tab bar
 config.hide_tab_bar_if_only_one_tab = false
 config.tab_bar_at_bottom = true
 config.use_fancy_tab_bar = false
 config.tab_and_split_indices_are_zero_based = true
 
--- tmux status
-wezterm.on("update-right-status", function(window, _)
-	local SOLID_LEFT_ARROW = ""
-	local ARROW_FOREGROUND = { Foreground = { Color = "#c6a0f6" } }
-	local prefix = ""
-
-	if window:leader_is_active() then
-		prefix = " " .. utf8.char(0x1f30a) -- ocean wave
-		SOLID_LEFT_ARROW = utf8.char(0xe0b2)
-	end
-
-	if window:active_tab():tab_id() ~= 0 then
-		ARROW_FOREGROUND = { Foreground = { Color = "#1e2030" } }
-	end -- arrow color based on if tab is first pane
-
-	window:set_left_status(wezterm.format({
-		{ Background = { Color = "#b7bdf8" } },
-		{ Text = prefix },
-		ARROW_FOREGROUND,
-		{ Text = SOLID_LEFT_ARROW },
-	}))
-end)
-
 -------- Plugins should normally be applied at the end of the file ----------
 local PLUGINS = {
-	{
-		use = "localhost",
+	tmux = {
+		use = "remote",
 		localhost = "file://localhost" .. os.getenv("HOME") .. "/github/wez-tmux",
 		remote = "https://github.com/khsoh/wez-tmux",
+		upstream = "https://github.com/sei40kr/wez-tmux",
+		overrides = {},
+	},
+	tabline = {
+		use = "localhost",
+		localhost = "file://localhost" .. os.getenv("HOME") .. "/github/wez-tabline",
+		remote = "https://github.com/khsoh/wez-tabline",
+		upstream = "https://github.com/michaelbrusegard/tabline.wez",
 		overrides = {},
 	},
 }
 
-for _, plugininfo in pairs(PLUGINS) do
-	local inuse = plugininfo.use and plugininfo.use or "remote"
-	wezterm.plugin.require(plugininfo[inuse]).apply_to_config(config, plugininfo.overrides)
+for _, cfg in pairs(PLUGINS) do
+	local inuse = cfg.use and cfg.use or "remote"
+	cfg.plugin = wezterm.plugin.require(cfg[inuse])
+end
+
+local function active_leader(window)
+	local SOLID_LEFT_ARROW = ""
+	local prefix = ""
+	local mode = "normal_mode"
+	if window.get_active_table then
+		mode = window:get_active_table()
+	end
+	local xcolors = PLUGINS.tabline.plugin.get_colors()[mode]
+
+	if window:leader_is_active() then
+		prefix = " " .. utf8.char(0x1f30a) -- ocean wave
+		SOLID_LEFT_ARROW = wezterm.nerdfonts.pl_left_hard_divider
+	end
+
+	local mytext = wezterm.format({
+		{ Background = { Color = xcolors.a.bg } },
+		{ Text = prefix },
+	})
+	mytext = mytext
+		.. wezterm.format({
+			{ Background = { Color = xcolors.a.fg } },
+			{ Foreground = { Color = xcolors.a.bg } },
+			{ Text = SOLID_LEFT_ARROW },
+		})
+	return mytext
+end
+
+-- tabline setup - the defaults are commented out
+PLUGINS.tabline.plugin.setup({
+	options = {
+		-- icons_enabled = true,
+		-- theme = 'Catppuccin Mocha',
+		-- color_overrides = {},
+		-- section_separators = {
+		--   left = wezterm.nerdfonts.pl_left_hard_divider,
+		--   right = wezterm.nerdfonts.pl_right_hard_divider,
+		-- },
+		-- component_separators = {
+		--   left = wezterm.nerdfonts.pl_left_soft_divider,
+		--   right = wezterm.nerdfonts.pl_right_soft_divider,
+		-- },
+		-- tab_separators = {
+		--   left = wezterm.nerdfonts.pl_left_hard_divider,
+		--   right = wezterm.nerdfonts.pl_right_hard_divider,
+		-- },
+		section_separators = {
+			left = "",
+			right = wezterm.nerdfonts.pl_right_hard_divider,
+		},
+	},
+	sections = {
+		-- tabline_a = { 'mode' },
+		-- tabline_b = { 'workspace' },
+		-- tabline_c = { ' ' },
+		tabline_a = { active_leader },
+		tabline_b = { "mode" },
+		tabline_c = { "workspace" },
+		-- tab_active = {
+		--   'index',
+		--   { 'parent', padding = 0 },
+		--   '/',
+		--   { 'cwd', padding = { left = 0, right = 1 } },
+		--   { 'zoomed', padding = 0 },
+		-- },
+		-- tab_inactive = { 'index', { 'process', padding = { left = 0, right = 1 } } },
+		-- tabline_x = { 'ram', 'cpu' },
+		-- tabline_y = { 'datetime', 'battery' },
+		tabline_y = {},
+		-- tabline_z = { 'hostname' },
+	},
+	extensions = {},
+})
+
+for _, cfg in pairs(PLUGINS) do
+	cfg.plugin.apply_to_config(config, cfg.overrides)
 end
 
 return config
